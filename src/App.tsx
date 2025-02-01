@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Binary, TreePine, Info, Hash, BarChart2, Code2 } from "lucide-react";
+import { useState, useEffect ,useRef} from "react";
+import { Binary, TreePine, Info, Hash, BarChart2, Code2,GitGraph,Download,FileUp } from "lucide-react";
 
 class HuffmanTreeNode {
   data: string;
@@ -73,7 +73,7 @@ function generateMaryTree(
   // Add dummy nodes if needed
   const dummiesNeeded = calculateRequiredDummies(pq.size, m);
   for (let i = 0; i < dummiesNeeded; i++) {
-    pq.enqueue(new HuffmanTreeNode(`dummy${i}`, 0));
+    pq.enqueue(new HuffmanTreeNode(`z${i}`, 0));
   }
 
   // Build the tree
@@ -117,6 +117,118 @@ function generateCodes(
   });
 }
 
+function TreeNode({ node, x, y, parentX, parentY, width, level }: { 
+  node: HuffmanTreeNode; 
+  x: number; 
+  y: number;
+  parentX?: number;
+  parentY?: number;
+  width: number;
+  level: number;
+}) {
+  const nodeSize = 60;
+  const verticalSpacing = 150;
+  const isLeaf = node.children.length === 0;
+  const isDummy = node.data.startsWith("dummy");
+
+  const Line = parentX !== undefined && parentY !== undefined ? (
+    <line
+      x1={parentX}
+      y1={parentY + nodeSize/2}
+      x2={x}
+      y2={y - nodeSize/2}
+      stroke="#818cf8"
+      strokeWidth="3"
+      className="opacity-70"
+    />
+  ) : null;
+
+  const childrenNodes = node.children.map((child, index) => {
+    const childCount = node.children.length;
+    const segmentWidth = width / childCount;
+    const childX = x - width/2 + segmentWidth * (index + 0.5);
+    const childY = y + verticalSpacing;
+
+    return (
+      <TreeNode
+        key={`${child.data}-${index}-${level}`}
+        node={child}
+        x={childX}
+        y={childY}
+        parentX={x}
+        parentY={y}
+        width={segmentWidth}
+        level={level + 1}
+      />
+    );
+  });
+
+  return (
+    <g>
+      {Line}
+      <circle
+        cx={x}
+        cy={y}
+        r={nodeSize/2 + 2}
+        className="fill-white"
+      />
+      <circle
+        cx={x}
+        cy={y}
+        r={nodeSize/2}
+        className={`${
+          isLeaf 
+            ? isDummy 
+              ? "fill-gray-100 stroke-gray-300" 
+              : "fill-indigo-100 stroke-indigo-500"
+            : "fill-purple-100 stroke-purple-500"
+        } stroke-3`}
+      />
+      <text
+        x={x}
+        y={y}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        className={`text-3xl font-mono font-semibold ${
+          isLeaf 
+            ? isDummy 
+              ? "fill-gray-400" 
+              : "fill-indigo-600"
+            : "fill-purple-600"
+        }`}
+      >
+        {isLeaf ? (node.data === " " ? "␣" : node.data) : node.freq}
+      </text>
+      {childrenNodes}
+    </g>
+  );
+}
+
+function TreeVisualization({ root }: { root: HuffmanTreeNode | null }) {
+  if (!root) return null;
+
+  const width = 1200;
+  const height = 800;
+  const margin = 60;
+
+  return (
+    <svg 
+      width="100%" 
+      height="100%" 
+      viewBox={`0 0 ${width} ${height}`}
+      className="max-h-[800px]"
+    >
+      <TreeNode
+        node={root}
+        x={width/2}
+        y={margin}
+        width={width - margin}
+        level={0}
+      />
+    </svg>
+  );
+}
+
 function App() {
   const [inputText, setInputText] = useState("aabbbccccc");
   const [mValue, setMValue] = useState(3);
@@ -128,6 +240,52 @@ function App() {
   const [frequencies, setFrequencies] = useState<Map<string, number>>(
     new Map()
   );
+  const [treeRoot, setTreeRoot] = useState<HuffmanTreeNode | null>(null);
+  const [compressedFile, setCompressedFile] = useState<Blob | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      setInputText(text);
+      
+      // Encode the text using M-ary Huffman
+      const encoded = encode(text, mValue);
+      setEncodedText(encoded);
+
+      // Create compressed file format
+      const compressionData = {
+        mValue,
+        huffmanCodes: Array.from(huffmanCodes.entries()),
+        encodedData: encoded,
+        originalFileName: file.name
+      };
+
+      // Create compressed file
+      const compressedBlob = new Blob([JSON.stringify(compressionData)], {
+        type: 'application/json'
+      });
+      setCompressedFile(compressedBlob);
+    };
+    reader.readAsText(file);
+  };
+
+  const downloadCompressedFile = () => {
+    if (!compressedFile) return;
+    
+    const url = URL.createObjectURL(compressedFile);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'compressed_file.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const calculateFrequencies = (text: string): Map<string, number> => {
     const freq = new Map<string, number>();
@@ -146,6 +304,7 @@ function App() {
 
     // Generate Huffman tree
     const root = generateMaryTree(freq, m);
+    setTreeRoot(root);
 
     // Generate codes
     const codes = new Map<string, string>();
@@ -182,27 +341,28 @@ function App() {
         {/* Header */}
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
           <div className="flex flex-col md:flex-row md:items-center gap-6">
-            <div className="p-4 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl">
-              <TreePine className="w-10 h-10 text-white" />
+            <div className="p-4 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
+              <TreePine className="w-12 h-12 text-white" />
             </div>
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 M-ary Huffman Coding Visualizer
               </h1>
               <p className="text-gray-600 mt-2 text-lg">
-                An interactive tool for visualizing and analyzing M-ary Huffman
-                compression
+                An interactive tool for visualizing and analyzing M-ary Huffman compression
               </p>
             </div>
           </div>
         </div>
 
+
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Input Section */}
           <div className="space-y-8">
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100 hover:shadow-2xl transition-shadow">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-indigo-100 rounded-lg">
+                <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg shadow-sm">
                   <Hash className="w-6 h-6 text-indigo-600" />
                 </div>
                 <h2 className="text-2xl font-semibold text-gray-800">
@@ -217,7 +377,7 @@ function App() {
                   <textarea
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all min-h-[100px] font-mono"
+                    className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all min-h-[120px] font-mono shadow-inner resize-none"
                     placeholder="Enter text to compress..."
                   />
                 </div>
@@ -230,9 +390,9 @@ function App() {
                       <button
                         key={value}
                         onClick={() => setMValue(value)}
-                        className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+                        className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all transform hover:-translate-y-0.5 ${
                           mValue === value
-                            ? "bg-indigo-600 text-white shadow-lg"
+                            ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                       >
@@ -245,9 +405,9 @@ function App() {
             </div>
 
             {/* Character Analysis */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100 hover:shadow-2xl transition-shadow">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-indigo-100 rounded-lg">
+                <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg shadow-sm">
                   <BarChart2 className="w-6 h-6 text-indigo-600" />
                 </div>
                 <h2 className="text-2xl font-semibold text-gray-800">
@@ -258,7 +418,7 @@ function App() {
                 {Array.from(frequencies.entries()).map(([char, freq]) => (
                   <div
                     key={char}
-                    className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100 hover:shadow-lg transition-all"
+                    className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100 hover:shadow-lg transition-all transform hover:-translate-y-0.5"
                   >
                     <div className="flex justify-between items-center mb-3">
                       <span className="font-mono text-xl bg-white px-4 py-2 rounded-lg shadow-sm border border-indigo-100">
@@ -283,24 +443,39 @@ function App() {
           {/* Output Section */}
           <div className="space-y-8">
             {/* Encoded Output */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100 hover:shadow-2xl transition-shadow">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-indigo-100 rounded-lg">
+                <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg shadow-sm">
                   <Code2 className="w-6 h-6 text-indigo-600" />
                 </div>
                 <h2 className="text-2xl font-semibold text-gray-800">
                   Encoded Output
                 </h2>
               </div>
-              <div className="bg-gray-900 text-green-400 p-6 rounded-xl font-mono overflow-x-auto shadow-inner min-h-[200px] whitespace-pre-wrap">
+              <div className="bg-gray-900 text-green-400 p-6 rounded-xl font-mono overflow-x-auto shadow-inner min-h-[200px] whitespace-pre-wrap border border-gray-800">
                 {encodedText || "No encoded output yet"}
               </div>
             </div>
 
-            {/* Compression Stats */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
+            {/* Tree Visualization */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100 hover:shadow-2xl transition-shadow">
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-indigo-100 rounded-lg">
+                <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg shadow-sm">
+                  <GitGraph className="w-6 h-6 text-indigo-600" />
+                </div>
+                <h2 className="text-2xl font-semibold text-gray-800">
+                  Huffman Tree Visualization
+                </h2>
+              </div>
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100 shadow-inner">
+                <TreeVisualization root={treeRoot} />
+              </div>
+            </div>
+
+            {/* Compression Stats */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100 hover:shadow-2xl transition-shadow">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg shadow-sm">
                   <Binary className="w-6 h-6 text-indigo-600" />
                 </div>
                 <h2 className="text-2xl font-semibold text-gray-800">
@@ -308,7 +483,7 @@ function App() {
                 </h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100 hover:shadow-lg transition-all transform hover:-translate-y-0.5">
                   <div className="flex items-center gap-2 mb-2">
                     <Info className="w-4 h-4 text-indigo-600" />
                     <p className="text-sm font-medium text-gray-600">
@@ -320,7 +495,7 @@ function App() {
                     <span className="text-lg ml-1 text-indigo-400">bits</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100 hover:shadow-lg transition-all transform hover:-translate-y-0.5">
                   <div className="flex items-center gap-2 mb-2">
                     <Info className="w-4 h-4 text-indigo-600" />
                     <p className="text-sm font-medium text-gray-600">
@@ -332,7 +507,7 @@ function App() {
                     <span className="text-lg ml-1 text-indigo-400">bits</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100 hover:shadow-lg transition-all transform hover:-translate-y-0.5">
                   <div className="flex items-center gap-2 mb-2">
                     <Info className="w-4 h-4 text-indigo-600" />
                     <p className="text-sm font-medium text-gray-600">
@@ -346,6 +521,49 @@ function App() {
                 </div>
               </div>
             </div>
+
+                    {/* File Upload Section */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-indigo-100 rounded-lg shadow-sm">
+              <FileUp className="w-6 h-6 text-indigo-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-800">
+              File Compression
+            </h2>
+          </div>
+          <div className="space-y-4">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-indigo-200 rounded-xl p-8 bg-indigo-50/50 hover:bg-indigo-50/70 transition-colors">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                className="hidden"
+                accept=".txt"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-indigo-600 text-white px-8 py-4 rounded-xl hover:bg-indigo-700 transition-all flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                <FileUp className="w-5 h-5" />
+                Upload Text File
+              </button>
+              <p className="text-sm text-gray-500 mt-4">
+                Upload a .txt file to compress using M-ary Huffman coding
+              </p>
+            </div>
+            
+            {compressedFile && (
+              <button
+                onClick={downloadCompressedFile}
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center gap-3 justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                <Download className="w-5 h-5" />
+                Download Compressed File
+              </button>
+            )}
+          </div>
+        </div>
           </div>
         </div>
       </div>
