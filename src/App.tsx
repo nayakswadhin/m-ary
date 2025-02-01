@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Binary, TreePine, Info } from "lucide-react";
+import { Binary, TreePine } from "lucide-react";
 
 class HuffmanTreeNode {
   data: string;
@@ -128,8 +128,6 @@ function App() {
   const [frequencies, setFrequencies] = useState<Map<string, number>>(
     new Map()
   );
-  const [comparisonData, setComparisonData] = useState<any[]>([]);
-  const [treeStructure, setTreeStructure] = useState<string>("");
 
   const calculateFrequencies = (text: string): Map<string, number> => {
     const freq = new Map<string, number>();
@@ -137,24 +135,6 @@ function App() {
       freq.set(char, (freq.get(char) || 0) + 1);
     }
     return freq;
-  };
-
-  // Function to visualize tree structure
-  const visualizeTree = (
-    node: HuffmanTreeNode | null,
-    level: number = 0
-  ): string => {
-    if (!node) return "";
-
-    const indent = "  ".repeat(level);
-    let result = `${indent}${node.data}(${node.freq})\n`;
-
-    for (let i = 0; i < node.children.length; i++) {
-      result += `${indent}Branch ${i}:\n`;
-      result += visualizeTree(node.children[i], level + 1);
-    }
-
-    return result;
   };
 
   const encode = (text: string, m: number) => {
@@ -166,9 +146,6 @@ function App() {
 
     // Generate Huffman tree
     const root = generateMaryTree(freq, m);
-
-    // Update tree visualization
-    setTreeStructure(visualizeTree(root));
 
     // Generate codes
     const codes = new Map<string, string>();
@@ -194,28 +171,9 @@ function App() {
     return encoded;
   };
 
-  const compareMAryValues = () => {
-    const data = [];
-    for (let m = 2; m <= 5; m++) {
-      const encoded = encode(inputText, m);
-      const ratio = Number(
-        (
-          ((inputText.length * 8 - encoded.length) / (inputText.length * 8)) *
-          100
-        ).toFixed(2)
-      );
-      data.push({
-        m,
-        compressionRatio: ratio,
-      });
-    }
-    setComparisonData(data);
-  };
-
   useEffect(() => {
     const encoded = encode(inputText, mValue);
     setEncodedText(encoded);
-    compareMAryValues();
   }, [inputText, mValue]);
 
   return (
