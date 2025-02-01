@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Binary, TreePine } from "lucide-react";
+import { Binary, TreePine, Info, Hash, BarChart2, Code2 } from "lucide-react";
 
 class HuffmanTreeNode {
   data: string;
@@ -177,84 +177,102 @@ function App() {
   }, [inputText, mValue]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-blue-100 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 border border-indigo-100">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-indigo-100 rounded-lg">
-              <TreePine className="w-8 h-8 text-indigo-600" />
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
+          <div className="flex flex-col md:flex-row md:items-center gap-6">
+            <div className="p-4 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl">
+              <TreePine className="w-10 h-10 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 M-ary Huffman Coding Visualizer
               </h1>
-              <p className="text-gray-600 mt-1">
-                Visualize and analyze M-ary Huffman compression in real-time
+              <p className="text-gray-600 mt-2 text-lg">
+                An interactive tool for visualizing and analyzing M-ary Huffman
+                compression
               </p>
             </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Input Controls */}
-          <div className="space-y-6">
-            {/* Input Section */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-indigo-100">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Input Configuration
-              </h2>
-              <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Input Section */}
+          <div className="space-y-8">
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <Hash className="w-6 h-6 text-indigo-600" />
+                </div>
+                <h2 className="text-2xl font-semibold text-gray-800">
+                  Input Configuration
+                </h2>
+              </div>
+              <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Text to Compress
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all min-h-[100px] font-mono"
                     placeholder="Enter text to compress..."
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    M Value (2-5)
+                    M Value (Tree Branching Factor)
                   </label>
-                  <input
-                    type="number"
-                    min="2"
-                    max="5"
-                    value={mValue}
-                    onChange={(e) => setMValue(Number(e.target.value))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                  />
+                  <div className="flex gap-4">
+                    {[2, 3, 4, 5].map((value) => (
+                      <button
+                        key={value}
+                        onClick={() => setMValue(value)}
+                        className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+                          mValue === value
+                            ? "bg-indigo-600 text-white shadow-lg"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Frequencies and Codes */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-indigo-100">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Character Analysis
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Character Analysis */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <BarChart2 className="w-6 h-6 text-indigo-600" />
+                </div>
+                <h2 className="text-2xl font-semibold text-gray-800">
+                  Character Analysis
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {Array.from(frequencies.entries()).map(([char, freq]) => (
                   <div
                     key={char}
-                    className="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-lg border border-indigo-100"
+                    className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100 hover:shadow-lg transition-all"
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="font-mono text-lg bg-white px-3 py-1 rounded-md shadow-sm">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-mono text-xl bg-white px-4 py-2 rounded-lg shadow-sm border border-indigo-100">
                         {char === " " ? "␣" : char}
                       </span>
-                      <span className="font-mono text-sm text-gray-600">
+                      <span className="font-mono text-sm text-indigo-600 bg-white px-3 py-1 rounded-lg shadow-sm border border-indigo-100">
                         Freq: {freq}
                       </span>
                     </div>
-                    <div className="mt-2 font-mono text-sm text-indigo-600 bg-white px-3 py-1 rounded-md shadow-sm">
-                      Code: {huffmanCodes.get(char)}
+                    <div className="font-mono text-sm bg-white px-4 py-2 rounded-lg shadow-sm border border-indigo-100">
+                      <span className="text-purple-600">Code: </span>
+                      <span className="text-indigo-600">
+                        {huffmanCodes.get(char)}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -262,45 +280,68 @@ function App() {
             </div>
           </div>
 
-          {/* Right Column - Output and Visualization */}
-          <div className="space-y-6">
+          {/* Output Section */}
+          <div className="space-y-8">
             {/* Encoded Output */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-indigo-100">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Encoded Output
-              </h2>
-              <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono overflow-x-auto shadow-inner">
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <Code2 className="w-6 h-6 text-indigo-600" />
+                </div>
+                <h2 className="text-2xl font-semibold text-gray-800">
+                  Encoded Output
+                </h2>
+              </div>
+              <div className="bg-gray-900 text-green-400 p-6 rounded-xl font-mono overflow-x-auto shadow-inner min-h-[200px] whitespace-pre-wrap">
                 {encodedText || "No encoded output yet"}
               </div>
             </div>
 
             {/* Compression Stats */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-indigo-100">
-              <div className="flex items-center gap-3 mb-4">
+            <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-indigo-100">
+              <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-indigo-100 rounded-lg">
                   <Binary className="w-6 h-6 text-indigo-600" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-800">
+                <h2 className="text-2xl font-semibold text-gray-800">
                   Compression Statistics
                 </h2>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Original Size</p>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {inputText.length * 8} bits
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Info className="w-4 h-4 text-indigo-600" />
+                    <p className="text-sm font-medium text-gray-600">
+                      Original Size
+                    </p>
+                  </div>
+                  <p className="text-3xl font-bold text-indigo-600">
+                    {inputText.length * 8}
+                    <span className="text-lg ml-1 text-indigo-400">bits</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Compressed Size</p>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {encodedText.length} bits
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Info className="w-4 h-4 text-indigo-600" />
+                    <p className="text-sm font-medium text-gray-600">
+                      Compressed Size
+                    </p>
+                  </div>
+                  <p className="text-3xl font-bold text-indigo-600">
+                    {encodedText.length}
+                    <span className="text-lg ml-1 text-indigo-400">bits</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">Compression Ratio</p>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {compressionRatio}%
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Info className="w-4 h-4 text-indigo-600" />
+                    <p className="text-sm font-medium text-gray-600">
+                      Compression Ratio
+                    </p>
+                  </div>
+                  <p className="text-3xl font-bold text-indigo-600">
+                    {compressionRatio}
+                    <span className="text-lg ml-1 text-indigo-400">%</span>
                   </p>
                 </div>
               </div>
